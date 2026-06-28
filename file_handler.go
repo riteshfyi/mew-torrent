@@ -4,10 +4,11 @@ import (
 	"os"
 )
 
-func OpenFile(filePath string) (*os.File, error){
-	f, err := os.Open(filePath)
+func readFile(filePath string) (string, error){
+	f, err := os.ReadFile(filePath)
 	if err != nil {
 		//to add a logger statement
 	}
-	return f,err;
+	content := string(f);
+	return content,err;
 }

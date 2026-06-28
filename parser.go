@@ -1,82 +1,90 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 )
 
 /**
-This file is related to parsing bencode to ASCII & vice-versa.
+This file is related to decoding & encoding bencode.
 **/
 
-func decode(input string)any{
-	if len(input) == 0 {
-		return nil;
-	}
+func decodeBenCode(input string)any{
+	stack := []any{};
+	n := len(input);
 
-	inputType := input[0];
-	if inputType == 'i' {
-		return decodeInteger(input)
-	}else if inputType == 'd'{
-		return decodeDictionary(input)
-	}else if inputType == 'l' {
-		return decodeList(input)
-	}else {
-		return decodeString(input)
-	}
+	for i := 0; i < n ; i++ {
+		ch := input[i];
 
-		return nil;
-}
+		if ch >= '0' && ch <= '9' {
+			j := i;
+			for j < n && input[j] != ':' {
+				j++;
+			} 
+			
+			stringSize,_ := strconv.Atoi(input[i:j]);
+			i =  j + 1;
+			j =  j + 1  + stringSize
+			currString := input[i : j];
+			stack = append(stack, currString)
+			i = j - 1;  
 
-func decodeString(input string) string{
-	inputLen := len(input);
-	index := -1;
-	for i := 0; i < inputLen; i++ {
-		if input[i] == ':' {
-			index = i;
-			break;
+		}else if ch == 'i' {
+			j := i ;
+		    for j < n && input[j] != 'e' {
+				j++;
+			}
+
+			num,_ := strconv.Atoi(input[i+1:j]);
+
+			stack = append(stack, num)
+			i = j;
+			
+		}else if ch == 'd' || ch == 'l' {
+			stack = append(stack, rune(ch));
+		}else if ch == 'e'{
+			//ch == 'e'
+			revStack := []any{};
+
+			for len(stack) > 0 && (stack[len(stack)-1] != 'l') && (stack[len(stack) - 1] != 'd') {
+				revStack = append(revStack, stack[len(stack) - 1]);
+				stack = stack[: len(stack) - 1];
+			}
+
+			if len(stack) == 0 {
+				//throw an error
+			}
+
+			if stack[len(stack) - 1] == 'l' {
+				// 'l'
+				list := []any{}
+				stack = stack[0:len(stack) - 1] ;
+				for len(revStack) > 0 {
+					list = append(list, revStack[len(revStack) - 1]);
+					revStack = revStack[:len(revStack) - 1];
+				}
+
+				stack = append(stack, list);
+			}else {
+				// 'd'
+				dict := make(map[any]any); 
+				stack = stack[0:len(stack) - 1] ;
+				for len(revStack) >= 2 {
+					key := revStack[len(revStack) - 1];
+					value := revStack[len(revStack) - 2];
+					dict[key] = value
+					revStack = revStack[: len(revStack) - 2];
+				}
+				
+				stack = append(stack, dict);	
+			}
 		}
+
+		if len(stack) == 0 {
+			//thorw an error
+		}
+
 	}
-
-	if index == -1 {
-		return "";
-	}
-
-	stringLen,_ := strconv.Atoi(input[:index]);
-
-	if stringLen < 0 {
-		//add a log here
-		return  "";
-	}
-
-	start:= index + 1;
-	end := index+stringLen+1;
-
-	if end > len(input) {
-		//add a log here
-
-		return "";
-	}
-
-	outputString := input[start : end];
-
-	return outputString;
-}
-
-func decodeInteger(input string) int{
-	length := len(input)
-	integer := input[1:length - 1];
-	val,_ := strconv.Atoi(integer);
-	//maybe better  error handling here
-	return val;
-};
-
-func decodeList(input string)[] any{
-
-};  
-
-func decodeDictionary(input string)map[any]any{
- 
+		return stack[len(stack) - 1];
 };
 
 
