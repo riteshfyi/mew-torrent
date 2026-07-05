@@ -1,6 +1,8 @@
 package main
 
 import (
+	"maps"
+	"slices"
 	"strconv"
 )
 
@@ -88,6 +90,39 @@ func decodeBenCode(input string) any {
 }
 
 
-func encodeBencode(map[string]any){
+func encode(input any) string{
+	var output string
+	switch v := input.(type) {
+	case map[string]any: 
+		curr :="d";
+		keys := slices.Collect(maps.Keys(v));
+		slices.Sort(keys);
+		for _, key := range keys {
+			curr+=encode(key);
+			curr+=encode(v[key]);
+		}
+		curr+="e";
+		output = curr;
+	case string:
+		curr := strconv.Itoa(len(input.(string)))
+		curr += ":"
+		curr+=input.(string)
+		output = curr;
+	case int:
+		curr := "i"
+		curr+=strconv.Itoa(input.(int));
+		curr+="e"
+		output = curr;
+	case []any:
+		curr := "l"
+		for _,val := range input.([]any){
+			curr+=encode(val);
+		}
 
+		curr+="e";
+		output = curr;
+	}
+	
+
+	return output;
 }

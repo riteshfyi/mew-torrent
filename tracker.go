@@ -20,9 +20,9 @@ const (
 
 // peer_id convention == '-CCDDDD-'
 func getTracker(dict map[string]any) {
-	info := dict["info"].(string); 
+	info := dict["info"]; 
 	//convert this info to bencode again
-	info_hash := sha1.Sum([]byte(info))
+	info_hash := sha1.Sum([]byte(encode(info)))
 	ueInfoHash := url.QueryEscape(string(info_hash[:]));
 	generatePeerId();
 	peerid_hash := sha1.Sum([]byte(peerId));
@@ -47,7 +47,7 @@ func getTracker(dict map[string]any) {
 	left := size;
 	event := started;
 
-
+    sendRequest([]byte(ueInfoHash),  []byte(uePeerIdHash), port, uploaded, downloaded, left, compact, no_peer_id, event)
 }
 
 func generatePeerId(){
@@ -70,6 +70,7 @@ func generatePeerId(){
 
 	peerId = id;
 }
+  
 
 func sendRequest(info_hash []byte, peer_id []byte, port int, uploaded int, downloaded int, left int, compact bool, no_peer_id bool, event Event) {
 
