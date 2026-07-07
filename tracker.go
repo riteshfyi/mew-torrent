@@ -1,8 +1,12 @@
 package main
 
 import (
+	crand "crypto/rand"
 	"crypto/sha1"
+	"fmt"
+	"io"
 	"math/rand/v2"
+	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -10,7 +14,7 @@ import (
 
 type Event string
 
-var peerId string
+var peerId []byte
 
 const (
 	started   Event = "started"
@@ -23,14 +27,13 @@ func getTracker(dict map[string]any) {
 	info := dict["info"]; 
 	//convert this info to bencode again
 	info_hash := sha1.Sum([]byte(encode(info)))
-	ueInfoHash := url.QueryEscape(string(info_hash[:]));
+	// ueInfoHash := url.QueryEscape(string(info_hash[:]));
 	generatePeerId();
-	peerid_hash := sha1.Sum([]byte(peerId));
-	uePeerIdHash := url.QueryEscape(string(peerid_hash[:]))
+	// uePeerIdHash := url.QueryEscape(string(peerid_hash[:]))
 	downloaded := 0;
 	uploaded := 0;
-	compact := false;
-	no_peer_id := false;
+	compact := 0;
+	no_peer_id := 0;
 	
 	fileInfo := dict["info"].(map[string]any);
 	var size int;
@@ -46,19 +49,24 @@ func getTracker(dict map[string]any) {
 
 	left := size;
 	event := started;
+	baseUrl := dict["announce"].(string)
+    content := sendRequest(baseUrl, info_hash[:],  peerId, strconv.Itoa(port), strconv.Itoa(uploaded), strconv.Itoa(downloaded), strconv.Itoa(left), strconv.Itoa(compact), strconv.Itoa(no_peer_id), event)
+	response := decodeBenCode(content).(map[string]any);
 
-    sendRequest([]byte(ueInfoHash),  []byte(uePeerIdHash), port, uploaded, downloaded, left, compact, no_peer_id, event)
+	fmt.Print(response)
+	//TO-DO : check for the failure field,
+
 }
 
 func generatePeerId(){
 	var id string
 	id += "-"
 
-	ch1 := rand.IntN(26) + 'a'
-	id += string(ch1) 
+	ch1 := rand.IntN(26) + 'a';
+	id += string(ch1);
 
-	ch2 := rand.IntN(26) + 'a'
-	id += string(ch2)
+	ch2 := rand.IntN(26) + 'a';
+	id += string(ch2);
 
 	d1 := rand.IntN(9);
 	id += strconv.Itoa(d1)
@@ -66,12 +74,49 @@ func generatePeerId(){
 	d2 := rand.IntN(9);
 	id += strconv.Itoa(d2)
 
+	d3:= rand.IntN(9);
+	id += strconv.Itoa(d3)
+
+	d4 := rand.IntN(9);
+	id += strconv.Itoa(d4)
+
 	id+= "-";
 
-	peerId = id;
+	prefix := []byte(id)
+	rest := make([]byte,12)
+	crand.Read(rest)
+	prefix = append(prefix, rest...)
+	peerId = prefix	
 }
   
 
-func sendRequest(info_hash []byte, peer_id []byte, port int, uploaded int, downloaded int, left int, compact bool, no_peer_id bool, event Event) {
+func sendRequest(baseUrl string, info_hash []byte, peer_id []byte, port string, uploaded string, downloaded string, left string, compact string, no_peer_id string, event Event) string{
+     reqUrl,_ := url.Parse(baseUrl);
+	 params := reqUrl.Query();
+	 params.Set("info_hash", string(info_hash));
+	 params.Set("peer_id", string(peer_id));
+	 params.Set("uploaded", uploaded);
+	 params.Set("compact", compact);
+	 params.Set("no_peer_id", no_peer_id);
+	 params.Set("event", string(event));
+	 params.Set("downloaded", downloaded);
+	 params.Set("left", left);
+	 params.Set("port", port)
 
+	 reqUrl.RawQuery = params.Encode();
+
+	 resp, err1 := http.Get(reqUrl.String())
+
+	 if err1 != nil {
+		 fmt.Printf("error : ", err1);
+		  return "";
+		}
+		
+	databytes, _ := io.ReadAll(resp.Body);
+	 defer resp.Body.Close();
+		
+	 content := string(databytes);
+
+	//  fmt.Printf("respone : ", content);
+		return content
 }

@@ -123,6 +123,5 @@ func encode(input any) string{
 		output = curr;
 	}
 	
-
 	return output;
 }

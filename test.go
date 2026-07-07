@@ -1,13 +1,9 @@
 package main
 
-import "fmt"
-
-var port int = 6800
+var port int = 6881
 
 func test() {
 	content, _ := readFile("./test.torrent")
 	decodedContent := decodeBenCode(content)
-	output := encode(decodedContent)  
-	//encoder is working fine too
-
+	getTracker(decodedContent.(map[string]any))
 }
