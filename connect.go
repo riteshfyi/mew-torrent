@@ -3,21 +3,17 @@ package main
 import (
 	"fmt"
 	"net"
+	"sync"
 )
 
-var peerMap map[string]*net.TCPConn
+var peerMap = make(map[string]*net.TCPConn);
 
-
-//Todo 
-// []Make map access concurrent safe ?
-
-
-
-func connectPeer(id string, addr string){
+func connectPeer(id string, addr string, wg *sync.WaitGroup){
 	//check if already exists ? 
+	defer wg.Done()
     _, ok := peerMap[id];
 
-	if ok == false {
+	if ok {
 		fmt.Println("Connection Already Exists with Peer:", id)
 		return;
 	}
@@ -34,9 +30,9 @@ func connectPeer(id string, addr string){
 	
 	if err != nil {
 		fmt.Println("Error connecting:", err)
-		return
+		return;
 	}
-
+	fmt.Printf("Connected With Peer %s", id);
 	peerMap[id] = conn
 }
 
@@ -50,13 +46,14 @@ func disconnectPeer(id string) {
 	delete(peerMap, id)
 }
 
-func sendMessage(id string, message []byte) {
+func sendMessage(id string, message []byte, wg *sync.WaitGroup) {
+	defer wg.Done()
 	conn, ok := peerMap[id];
 	if !ok {
-		fmt.Println("Peer not connected : unable to send message")
+		fmt.Printf("Peer not connected : unable to send message, Peer Id : %s", id)
 		return
 	}
-
+	fmt.Println("Sending Message to %s", id);
 	conn.Write(message)
 }
 

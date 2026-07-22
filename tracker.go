@@ -11,8 +11,8 @@ import (
 	"strconv"
 )
 
-
-type Event string
+var info_hash []byte;
+type Event string;
 
 var peerId []byte
 
@@ -23,7 +23,7 @@ const (
 )
 
 // peer_id convention == '-CCDDDD-'
-func getTracker(dict map[string]any) {
+func getTracker(dict map[string]any) map[string]any{
 	info := dict["info"]; 
 	//convert this info to bencode again
 	info_hash := sha1.Sum([]byte(encode(info)))
@@ -55,7 +55,7 @@ func getTracker(dict map[string]any) {
 
 	fmt.Print(response)
 	//TO-DO : check for the failure field,
-
+	return response;
 }
 
 func generatePeerId(){
